@@ -1,6 +1,6 @@
 .DS_Store
 node_modules/
-模块六：软件包管理-任务3/
+doc/
 dist/
 npm-debug.log
 yarn-error.log
