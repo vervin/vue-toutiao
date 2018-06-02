@@ -10,7 +10,7 @@ import router from './router'
 import VueLazyload from 'vue-lazyload'
 Vue.use(VueRouter)
 Vue.use(VueLazyload, {
-	loading: '../static/lazy.gif'
+	loading: 'static/lazy.gif'
 })
 // const routes = [{
 //   path: '/',

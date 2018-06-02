@@ -12,7 +12,8 @@
 </template>
 <script>
 import NewsList from "./newsList.vue";
-import Jsonp from 'jsonp'
+import Jsonp from 'jsonp'                        
+
 
 // import { mapState } from 'vuex'
 
@@ -65,112 +66,148 @@ export default {
     }
   },
   methods: {
-    // scrollRenovate() {
-    //   const SH = document.body.scrollHeight;
-    //   const viewH = document.documentElement.clientHeight;
-    //   const scrollTop = document.body.scrollTop;
-    //   this.isTop = scrollTop > 600 ? true : false;
-    //   if (viewH + scrollTop === SH) {
-    //     this.$store.dispatch("getNewsList", {
-    //       type: this.$route.params.type,
-    //       isUpdateNews: true
-    //     });
-    //   }
-    // },
+    scrollRenovate() {
+      const SH = document.body.scrollHeight;
+      const viewH = document.documentElement.clientHeight;
+      const scrollTop = document.body.scrollTop;
+      this.isTop = scrollTop > 600 ? true : false;
+       
+      if (viewH + scrollTop === SH) {
+        console.log(123)
+         this.getNewsList({
+        type: this.$route.params.type,
+        isUpdateNews: true
+      })
+      }
+    },
     returnScrollTop() {
       document.body.scrollTop = 0;
     },
-    // touchmove(e) {
-    //   const disY = e.touches[0].pageY - this.touchPosition;
-    //   if (disY < 30) return false;
-    //   this.$refs.touchAll.style.transform = `translateY(${Math.min(
-    //     disY,
-    //     200
-    //   )}px)`;
-    //   if (disY < 100) return false;
-    //   this.listText = "松开推荐";
-    // },
-    // touchend(e) {
-    //   this.$refs.touchAll.removeEventListener("touchmove", this.touchmove);
-    //   this.$refs.touchAll.removeEventListener("touchend", this.touchend);
-    //   const disY = e.changedTouches[0].pageY - this.touchPosition;
-    //   if (disY < 30) return false;
-    //   this.$refs.touchAll.style.transform = "";
-    //   this.$refs.touchAll.style.transition = "transform 0.3s linear";
-    //   if (disY < 100) return false;
-    //   this.listText = "推荐中";
-    //   this.$refs.touchAll.style.transform = "translateY(1.5rem)";
-    //   this.$store.dispatch("getNewsList", {
-    //     type: this.$route.params.type,
-    //     isUpdateNews: false
-    //   });
-    //   setTimeout(() => {
-    //     if (this.isReturnNews) {
-    //       this.$refs.touchAll.style.transform = "";
-    //       this.isShow = true;
-    //       this.closeShow();
-    //     } else {
-    //       this.listText = "加载失败";
-    //       this.$refs.touchAll.style.transform = "";
-    //     }
-    //   }, 2000);
-    // },
-    // closeShow() {
-    //   setTimeout(() => {
-    //     this.isShow = false;
-    //   }, 3000);
-    // },
+    touchmove(e) {
+      const disY = e.touches[0].pageY - this.touchPosition;
+      if (disY < 30) return false;
+      this.$refs.touchAll.style.transform = `translateY(${Math.min(
+        disY,
+        200
+      )}px)`;
+      if (disY < 100) return false;
+      this.listText = "松开推荐";
+    },
+    touchend(e) {
+      this.$refs.touchAll.removeEventListener("touchmove", this.touchmove);
+      this.$refs.touchAll.removeEventListener("touchend", this.touchend);
+      const disY = e.changedTouches[0].pageY - this.touchPosition;
+      if (disY < 30) return false;
+      this.$refs.touchAll.style.transform = "";
+      this.$refs.touchAll.style.transition = "transform 0.3s linear";
+      if (disY < 100) return false;
+      this.listText = "推荐中";
+      this.$refs.touchAll.style.transform = "translateY(1.5rem)";
+      this.getNewsList({
+        type: this.$route.params.type,
+        isUpdateNews: false
+      })
+
+      setTimeout(() => {
+        if (this.isReturnNews) {
+          this.$refs.touchAll.style.transform = "";
+          this.isShow = true;
+          this.closeShow();
+        } else {
+          this.listText = "加载失败";
+          this.$refs.touchAll.style.transform = "";
+        }
+      }, 2000);
+    },
+    closeShow() {
+      setTimeout(() => {
+        this.isShow = false;
+      }, 3000);
+    },
 
     getNewsList(newsType){
 		if(newsType.type != undefined){
 			let timeRequest = parseInt(new Date().getTime() / 1000)
 			Jsonp(`https://m.toutiao.com/list/?tag=${newsType.type}&ac=wap&count=20&format=json_raw&as=A1355A001191ABB&cp=5A01011A9BCB9E1&min_behot_time=${timeRequest}`,
 				{ timeout: 3000 },(err,res) => {
-			    this.newsLists[this.$route.params.type || "__all__"] = res.data
+          var _this = this;
+          if (err || res.data.length === 0) {
+                  _this.changeState({isReturnNews:false})
+			            return false;
+                }
+                _this.changeState({isReturnNews:true})
+			    	if(newsType.isUpdateNews){
+              _this.addUpdateNews({
+                type: newsType.type,
+			    			data:res.data
+              })
+			    	}else{
+              _this.addNewsList({
+                type: newsType.type,
+			    			data:res.data
+              })
+			    	}
 			})
+    }
+  },
+  changeState(change){
+    this.isReturnNews = change.isReturnNews
+  },
+  addNewsList(newsLists) {        //添加新闻类型列表
+    this.newsLists[newsLists.type] = newsLists.data
+    console.log(this.newsLists)
+		this.newsLength = newsLists.data.length
+	},
+
+	addUpdateNews(newsLists) {         //添加更多新闻
+		if(newsLists.type == '__all__'){
+			newsLists.data.splice(0,1)
 		}
-	}
+        this.newsLists[newsLists.type] = this.newsLists[newsLists.type].concat(newsLists.data)
+	},
   },
   created() {
     if (this.newsLists[this.$route.params.type].length == 0) {
-        this.getNewsList(this.$route.params)
-    //   this.$store.dispatch('getNewsList', {
-    //     type: this.$route.params.type,
-    //     isUpdateNews: false
-    //   })
+        this.getNewsList( {
+        type: this.$route.params.type,
+        isUpdateNews: false
+      })
     }
   },
-//   mounted() {
-//     window.addEventListener("scroll", this.scrollRenovate); //滚动条监听
+  mounted() {
+    window.addEventListener("scroll", this.scrollRenovate); //滚动条监听
 
-//     let _this = this;
-//     this.$refs.touchAll.addEventListener("touchstart", function(e) {
-//       if (document.body.scrollTop <= 0) {
-//         _this.touchPosition = e.touches[0].pageY;
-//         _this.$refs.touchAll.style.transition = "";
-//         _this.listText = "下拉加载";
-//         _this.isShow = false;
-//         _this.$refs.touchAll.addEventListener("touchmove", _this.touchmove);
-//         _this.$refs.touchAll.addEventListener("touchend", _this.touchend);
-//       }
-//     });
-//   },
-  watch: {
-    // $route(to, from) {
-    //   if (to.path.includes("all")) {
-    //     const type = this.$route.params.type;
-    //     if (this.newsLists[type].length == 0) {
-    //     this.getNewsList(this.$route.params)
-         
-    //     }
-    //   }
-    // }
+    let _this = this;
+    this.$refs.touchAll.addEventListener("touchstart", function(e) {
+      if (document.body.scrollTop <= 0) {
+        _this.touchPosition = e.touches[0].pageY;
+        _this.$refs.touchAll.style.transition = "";
+        _this.listText = "下拉加载";
+        _this.isShow = false;
+        _this.$refs.touchAll.addEventListener("touchmove", _this.touchmove);
+        _this.$refs.touchAll.addEventListener("touchend", _this.touchend);
+      }
+    });
   },
-//   beforeRouteLeave(to, form, next) {
-//     window.removeEventListener("scroll", this.scrollRenovate);
-//     this.$refs.touchAll.removeEventListener("touchstart", this.touchmove);
-//     next();
-//   }
+  watch: {
+    $route(to, from) {
+      if (to.path.includes("all")) {
+        const type = this.$route.params.type;
+        if (this.newsLists[type].length == 0) {
+        this.getNewsList({
+            type: type,
+            isUpdateNews: false
+          })
+         
+        }
+      }
+    }
+  },
+  beforeRouteLeave(to, form, next) {
+    window.removeEventListener("scroll", this.scrollRenovate);
+    this.$refs.touchAll.removeEventListener("touchstart", this.touchmove);
+    next();
+  }
 };
 </script>
 <style>
